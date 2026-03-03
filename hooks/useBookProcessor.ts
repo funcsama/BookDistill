@@ -3,6 +3,7 @@ import { parserFactory } from '../services/parserFactory';
 import { ParseError } from '../types';
 import { GoogleGenAI } from '@google/genai';
 import { CONTEXT_WINDOW_CHAR_LIMIT } from '../constants';
+import { DEFAULTS, SYSTEM_INSTRUCTION_TEMPLATE } from '../config/defaults';
 import { BookSession } from '../types';
 
 interface UseBookProcessorProps {
@@ -89,15 +90,8 @@ export const useBookProcessor = ({ addSession, updateSession, getApiKey }: UseBo
     try {
       const ai = new GoogleGenAI({ apiKey });
       
-      // Minimalist System Instruction matching AI Studio experience
-      // We only strictly enforce Language and Markdown format.
-      // We let the model decide the structure ("Detailed knowledge extraction").
-      const systemInstruction = `
-        Expert Book Distiller.
-        Task: Extract detailed knowledge and insights from the provided book.
-        Constraint 1: Output MUST be in ${language} language.
-        Constraint 2: Use clean Markdown formatting.
-      `.trim();
+      // Use shared system instruction template
+      const systemInstruction = SYSTEM_INSTRUCTION_TEMPLATE(language);
 
       const responseStream = await ai.models.generateContentStream({
         model: modelId,
@@ -109,8 +103,8 @@ export const useBookProcessor = ({ addSession, updateSession, getApiKey }: UseBo
             ]
           }
         ],
-        config: { 
-          temperature: 0.3,
+        config: {
+          temperature: DEFAULTS.TEMPERATURE,
           systemInstruction: systemInstruction
         }
       });

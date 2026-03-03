@@ -28,18 +28,18 @@ GEMINI_API_KEY=your_key npm run distill -- -i book.epub -o summary.md
 -i, --input <file>    Input file (epub, md, markdown)
 -o, --output <file>   Output markdown file (default: stdout)
 -l, --lang <lang>     Output language (default: Chinese)
--m, --model <model>   Gemini model (default: gemini-2.5-flash)
+-m, --model <model>   Gemini model (default: gemini-3-pro-preview)
 -h, --help            Show help
 ```
 
 ### Examples
 
 ```bash
-# Basic usage
+# Basic usage (uses Gemini 3.0 Pro by default)
 GEMINI_API_KEY=xxx npm run distill -- -i book.epub -o summary.md
 
-# Use Gemini 3.0 Pro for better quality
-GEMINI_API_KEY=xxx npm run distill -- -i book.epub -o summary.md -m gemini-3-pro-preview
+# Use Gemini 2.5 Flash for faster processing
+GEMINI_API_KEY=xxx npm run distill -- -i book.epub -o summary.md -m gemini-2.5-flash
 
 # Output in English
 GEMINI_API_KEY=xxx npm run distill -- -i book.epub -o summary.md -l English
@@ -52,8 +52,8 @@ GEMINI_API_KEY=xxx npm run distill -- -i book.epub > summary.md
 
 | Model ID | Description |
 |----------|-------------|
-| `gemini-2.5-flash` | Fast, good for most books (default) |
-| `gemini-3-pro-preview` | Higher quality, slower |
+| `gemini-3-pro-preview` | Higher quality, recommended (default) |
+| `gemini-2.5-flash` | Fast, good for most books |
 
 ## Web UI
 

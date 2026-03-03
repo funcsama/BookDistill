@@ -1,22 +1,23 @@
 #!/usr/bin/env npx tsx
 /**
  * BookDistill CLI
- * 
+ *
  * Usage:
- *   GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i book.epub -o summary.md
- *   GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i book.epub  # outputs to stdout
- * 
+ *   GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i book.epub -o summary.md
+ *   GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i book.epub  # outputs to stdout
+ *
  * Options:
  *   -i, --input    Input file (epub, md, pdf)
  *   -o, --output   Output file (optional, defaults to stdout)
  *   -l, --lang     Output language (default: Chinese)
- *   -m, --model    Gemini model (default: gemini-2.5-flash)
+ *   -m, --model    Gemini model (default: gemini-3-pro-preview)
  *   -h, --help     Show help
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { GoogleGenAI } from '@google/genai';
+import { DEFAULTS, LANGUAGES, MODELS, SYSTEM_INSTRUCTION_TEMPLATE } from '../config/defaults';
 
 // ============ Minimal argument parser ============
 interface Args {
@@ -29,8 +30,8 @@ interface Args {
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
-    lang: 'Chinese',
-    model: 'gemini-2.5-flash',
+    lang: DEFAULTS.LANGUAGE,
+    model: DEFAULTS.MODEL,
     help: false,
   };
   
@@ -70,31 +71,36 @@ function parseArgs(argv: string[]): Args {
 }
 
 function showHelp() {
+  const languageList = LANGUAGES.map(l => l.code).join(', ');
+  const modelList = MODELS.map(m => `${m.id} (${m.shortName})`).join(', ');
+
   console.log(`
 BookDistill CLI - Extract knowledge from books using Gemini
 
 Usage:
-  GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i <file> [options]
+  GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i <file> [options]
 
 Options:
   -i, --input <file>    Input file (epub, md, markdown)
   -o, --output <file>   Output markdown file (default: stdout)
-  -l, --lang <lang>     Output language (default: Chinese)
-  -m, --model <model>   Gemini model (default: gemini-2.5-flash)
+  -l, --lang <lang>     Output language (default: ${DEFAULTS.LANGUAGE})
+                        Available: ${languageList}
+  -m, --model <model>   Gemini model (default: ${DEFAULTS.MODEL})
+                        Available: ${modelList}
   -h, --help            Show this help
 
 Environment:
   GEMINI_API_KEY        Required. Your Gemini API key.
 
 Examples:
-  # Basic usage
-  GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i book.epub -o summary.md
+  # Basic usage (uses default model: ${DEFAULTS.MODEL})
+  GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i book.epub -o summary.md
 
-  # Use different model
-  GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i book.epub -m gemini-3-pro-preview
+  # Use faster model
+  GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i book.epub -m gemini-2.5-flash
 
   # Output in English
-  GEMINI_API_KEY=xxx npx ts-node cli/distill.ts -i book.epub -l English
+  GEMINI_API_KEY=xxx npx tsx cli/distill.ts -i book.epub -l English
 `);
 }
 
@@ -220,18 +226,12 @@ async function generateSummary(
   apiKey: string
 ): Promise<string> {
   const ai = new GoogleGenAI({ apiKey });
-  
-  const systemInstruction = `
-Expert Book Distiller.
-Task: Extract detailed knowledge and insights from the provided book.
-Constraint 1: Output MUST be in ${language} language.
-Constraint 2: Use clean Markdown formatting.
-Constraint 3: Do NOT include any conversational text like "这是一本", "以下是", "如果你愿意" etc.
-Constraint 4: Start directly with the content structure (headings, bullet points, etc).
-`.trim();
+
+  // Use shared system instruction template
+  const systemInstruction = SYSTEM_INSTRUCTION_TEMPLATE(language);
 
   process.stderr.write(`Sending to ${modelId} (${(text.length / 1000).toFixed(0)}k chars)...\n`);
-  
+
   const response = await ai.models.generateContent({
     model: modelId,
     contents: [
@@ -241,11 +241,11 @@ Constraint 4: Start directly with the content structure (headings, bullet points
       },
     ],
     config: {
-      temperature: 0.3,
+      temperature: DEFAULTS.TEMPERATURE,
       systemInstruction,
     },
   });
-  
+
   return response.text || '';
 }
 
@@ -277,9 +277,8 @@ async function main() {
     process.stderr.write(`Extracted: "${title}" by ${author || 'Unknown'} (${(text.length / 1000).toFixed(0)}k chars)\n`);
     
     // Check size limit
-    const LIMIT = 3_500_000;
-    if (text.length > LIMIT) {
-      console.error(`Error: Book too long (${(text.length / 1_000_000).toFixed(1)}M chars). Max: ${LIMIT / 1_000_000}M`);
+    if (text.length > DEFAULTS.CONTEXT_WINDOW_CHAR_LIMIT) {
+      console.error(`Error: Book too long (${(text.length / 1_000_000).toFixed(1)}M chars). Max: ${DEFAULTS.CONTEXT_WINDOW_CHAR_LIMIT / 1_000_000}M`);
       process.exit(1);
     }
     
