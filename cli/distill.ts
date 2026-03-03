@@ -18,6 +18,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { GoogleGenAI } from '@google/genai';
 import { DEFAULTS, LANGUAGES, MODELS, SYSTEM_INSTRUCTION_TEMPLATE } from '../config/defaults';
+import { NodeFileAdapter, NodeDOMParserAdapter } from './adapters/nodeAdapters';
+import { parseEpubFile } from '../services/parsers/epubParser.universal';
+import { parseMarkdownFile } from '../services/parsers/markdownParser.universal';
 
 // ============ Minimal argument parser ============
 interface Args {
@@ -104,112 +107,23 @@ Examples:
 `);
 }
 
-// ============ File Parsers (Node.js versions) ============
-
-async function parseMarkdown(filePath: string): Promise<{ text: string; title: string; author?: string }> {
-  const content = fs.readFileSync(filePath, 'utf-8');
-  
-  // Parse frontmatter
-  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-  
-  if (!match) {
-    return {
-      text: content,
-      title: path.basename(filePath, path.extname(filePath)),
-    };
-  }
-  
-  const [, frontmatter, body] = match;
-  const titleMatch = frontmatter.match(/^title:\s*['"]?(.+?)['"]?\s*$/m);
-  const authorMatch = frontmatter.match(/^author:\s*['"]?(.+?)['"]?\s*$/m);
-  
-  return {
-    text: body.trim(),
-    title: titleMatch?.[1] || path.basename(filePath, path.extname(filePath)),
-    author: authorMatch?.[1],
-  };
-}
-
-async function parseEpub(filePath: string): Promise<{ text: string; title: string; author?: string }> {
-  // Dynamic import for JSZip (ESM compatible)
-  const JSZip = (await import('jszip')).default;
-  const { JSDOM } = await import('jsdom');
-  
-  const fileBuffer = fs.readFileSync(filePath);
-  const zip = await JSZip.loadAsync(fileBuffer);
-  
-  // 1. Find OPF path from container.xml
-  const containerXml = await zip.file('META-INF/container.xml')?.async('string');
-  if (!containerXml) throw new Error('Invalid EPUB: Missing container.xml');
-  
-  const containerDom = new JSDOM(containerXml, { contentType: 'text/xml' });
-  const rootFile = containerDom.window.document.querySelector('rootfile');
-  const opfPath = rootFile?.getAttribute('full-path');
-  if (!opfPath) throw new Error('Invalid EPUB: Cannot find OPF path');
-  
-  // 2. Parse OPF
-  const opfContent = await zip.file(opfPath)?.async('string');
-  if (!opfContent) throw new Error('Invalid EPUB: OPF file missing');
-  
-  const opfDom = new JSDOM(opfContent, { contentType: 'text/xml' });
-  const opfDoc = opfDom.window.document;
-  
-  // Extract metadata
-  const title = opfDoc.querySelector('metadata > title, metadata title')?.textContent 
-    || path.basename(filePath, '.epub');
-  const author = opfDoc.querySelector('metadata > creator, metadata creator')?.textContent || undefined;
-  
-  // 3. Build manifest map
-  const manifestItems = Array.from(opfDoc.querySelectorAll('manifest > item, manifest item'));
-  const manifestMap = new Map<string, string>();
-  manifestItems.forEach(item => {
-    manifestMap.set(item.getAttribute('id') || '', item.getAttribute('href') || '');
-  });
-  
-  // 4. Get spine order
-  const spineItems = Array.from(opfDoc.querySelectorAll('spine > itemref, spine itemref'));
-  
-  const opfFolder = opfPath.substring(0, opfPath.lastIndexOf('/'));
-  const resolvePath = (href: string) => opfFolder ? `${opfFolder}/${href}` : href;
-  
-  // 5. Extract text from chapters
-  let fullText = '';
-  
-  for (const item of spineItems) {
-    const idref = item.getAttribute('idref');
-    if (!idref) continue;
-    
-    const href = manifestMap.get(idref);
-    if (!href) continue;
-    
-    const fullPath = resolvePath(href);
-    const fileContent = await zip.file(fullPath)?.async('string');
-    
-    if (fileContent) {
-      const dom = new JSDOM(fileContent);
-      const doc = dom.window.document;
-      
-      // Remove scripts and styles
-      doc.querySelectorAll('script, style').forEach(el => el.remove());
-      
-      const text = doc.body?.textContent || '';
-      fullText += text.replace(/\s+/g, ' ').trim() + '\n\n';
-    }
-  }
-  
-  return { text: fullText, title, author };
-}
+// ============ File Parsers (复用 Web 端解析器) ============
 
 async function parseFile(filePath: string): Promise<{ text: string; title: string; author?: string }> {
   const ext = path.extname(filePath).toLowerCase();
-  
+  const fileAdapter = NodeFileAdapter.fromPath(filePath);
+
   switch (ext) {
-    case '.epub':
-      return parseEpub(filePath);
+    case '.epub': {
+      const domParser = new NodeDOMParserAdapter();
+      const result = await parseEpubFile(fileAdapter, { domParser });
+      return { text: result.text, title: result.title, author: result.author };
+    }
     case '.md':
-    case '.markdown':
-      return parseMarkdown(filePath);
+    case '.markdown': {
+      const result = await parseMarkdownFile(fileAdapter);
+      return { text: result.text, title: result.title, author: result.author };
+    }
     default:
       throw new Error(`Unsupported format: ${ext}. Supported: .epub, .md, .markdown`);
   }
