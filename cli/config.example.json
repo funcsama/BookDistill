@@ -1,0 +1,37 @@
+{
+  "providers": {
+    "gemini": {
+      "type": "gemini",
+      "apiKey": "YOUR_GEMINI_API_KEY"
+    },
+    "bailian": {
+      "type": "openai_compatible",
+      "apiKey": "sk-sp-YOUR_KEY",
+      "baseUrl": "https://coding.dashscope.aliyuncs.com"
+    },
+    "openai": {
+      "type": "openai",
+      "apiKey": "sk-YOUR_OPENAI_KEY"
+    },
+    "anthropic": {
+      "type": "anthropic",
+      "apiKey": "sk-ant-YOUR_KEY"
+    },
+    "local": {
+      "type": "openai_compatible",
+      "apiKey": "ollama",
+      "baseUrl": "http://localhost:11434"
+    }
+  },
+  "defaults": {
+    "provider": "bailian",
+    "model": "qwen3.5-plus",
+    "language": "Chinese"
+  },
+  "github": {
+    "token": "YOUR_GITHUB_TOKEN",
+    "owner": "your-username",
+    "repo": "your-repo",
+    "path": "notes/books"
+  }
+}

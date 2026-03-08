@@ -29,3 +29,6 @@ dist-ssr
 output.md
 summary*.md
 test-output/
+
+# CLI config (contains API keys) — copy from cli/config.example.json
+cli/config.json

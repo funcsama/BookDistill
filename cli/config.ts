@@ -1,6 +1,7 @@
 /**
  * BookDistill CLI 配置管理
- * 配置文件路径: ~/.bookdistill/config.json
+ * 配置文件路径: <repo>/cli/config.json  (gitignored)
+ * 示例文件:     <repo>/cli/config.example.json  (已提交)
  *
  * 结构参考 openclaw/claude-code 风格:
  * - providers: 多 provider 配置
@@ -9,7 +10,6 @@
  */
 
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -54,8 +54,12 @@ export interface BookDistillConfig {
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
-export const CONFIG_DIR = path.join(os.homedir(), '.bookdistill');
+/** 仓库根目录（cli/ 的上一级） */
+const REPO_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+
+export const CONFIG_DIR = path.join(REPO_ROOT, 'cli');
 export const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
+export const CONFIG_EXAMPLE_PATH = path.join(CONFIG_DIR, 'config.example.json');
 
 // ── Default config ───────────────────────────────────────────────────────────
 
@@ -102,9 +106,7 @@ export function writeConfig(config: BookDistillConfig): void {
 }
 
 export function ensureConfigDir(): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
+  // cli/ always exists in repo, nothing to create
 }
 
 // ── Resolve effective provider+model from config+CLI args ────────────────────
@@ -219,8 +221,8 @@ export function initConfig(): void {
   };
 
   writeConfig(example);
-  console.log(`Created example config at ${CONFIG_PATH}`);
-  console.log('Edit it to add your API keys, then run: book-distill -i your-book.epub');
+  console.log(`Created ${CONFIG_PATH}`);
+  console.log('Edit it to add your API keys, then run: npx tsx cli/distill.ts -i your-book.epub');
 }
 
 // ── Pretty print config (mask keys) ─────────────────────────────────────────
