@@ -32,3 +32,6 @@ test-output/
 
 # CLI config (contains API keys) — copy from cli/config.example.json
 cli/config.json
+
+# Skill package (build artifact)
+*.skill

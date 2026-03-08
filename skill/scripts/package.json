@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "jsdom": "^25.0.0"
+  }
+}

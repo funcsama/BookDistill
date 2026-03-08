@@ -122,6 +122,23 @@ config --init            生成示例配置文件
 config --show            查看当前配置（API Key 脱敏）
 ```
 
+## Claude Skill（让 Claude 直接提炼书籍）
+
+`skill/` 目录包含一个 [Claude Code](https://claude.ai/claude-code) skill，让 Claude 自身直接阅读并提炼书籍内容，无需调用任何外部 AI API。
+
+### 安装
+
+```bash
+# 1. 安装 EPUB 提取脚本的依赖
+npm install --prefix skill/scripts
+
+# 2. 将 skill 目录安装到 Claude
+# 把 skill/ 复制到 ~/.claude/skills/book-distill/
+cp -r skill/ ~/.claude/skills/book-distill/
+```
+
+安装后，在 Claude Code 中直接说"帮我提炼这本书 ~/Downloads/xxx.epub"即可触发。
+
 ## 测试
 
 ```bash
@@ -158,6 +175,11 @@ BookDistill/
 │   ├── config.json           # 本地配置（gitignored）
 │   ├── config.example.json   # 配置模板
 │   └── adapters/             # Node.js 环境适配器
+├── skill/                    # Claude Code skill
+│   ├── SKILL.md              # skill 定义和工作流程
+│   └── scripts/
+│       ├── extract_epub.ts   # 独立 EPUB 文本提取脚本
+│       └── package.json      # 依赖（jszip、jsdom）
 ├── index.html                # Vite HTML 入口
 ├── vite.config.ts
 └── tsconfig.json
