@@ -8,7 +8,7 @@ import type {
   DOMParserAdapter,
   DocumentAdapter,
   ElementAdapter
-} from '../../services/parsers/adapters';
+} from '../../src/services/parsers/adapters';
 
 export class NodeFileAdapter implements FileAdapter {
   constructor(

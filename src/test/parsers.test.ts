@@ -5,9 +5,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { NodeFileAdapter, NodeDOMParserAdapter } from './cli/adapters/nodeAdapters';
-import { parseEpubFile } from './services/parsers/epubParser.universal';
-import { parseMarkdownFile } from './services/parsers/markdownParser.universal';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { NodeFileAdapter, NodeDOMParserAdapter } from '../../cli/adapters/nodeAdapters';
+import { parseEpubFile } from '../services/parsers/epubParser.universal';
+import { parseMarkdownFile } from '../services/parsers/markdownParser.universal';
 
 // 测试结果
 interface TestResult {
@@ -24,12 +27,12 @@ async function testMarkdownParser() {
   console.log('📝 测试 Markdown 解析器...');
 
   try {
-    const testFile = 'test-markdown-sample.md';
+    const testFile = path.join(__dirname, 'fixtures/test-book.md');
     if (!fs.existsSync(testFile)) {
       results.push({
         name: 'Markdown Parser',
         passed: false,
-        error: '测试文件不存在: test-markdown-sample.md'
+        error: '测试文件不存在'
       });
       return;
     }
@@ -39,8 +42,8 @@ async function testMarkdownParser() {
 
     // 验证结果
     const checks = {
-      'title 提取': result.title === '测试书籍：深入理解 TypeScript',
-      'author 提取': result.author === '张三',
+      'title 提取': result.title === '软件工程实践指南',
+      'author 提取': result.author === '李明',
       'format 正确': result.format === 'md',
       'content 非空': result.text.length > 0,
       'frontmatter 移除': !result.text.includes('---')
@@ -79,7 +82,7 @@ async function testEpubParser() {
   console.log('📚 测试 EPUB 解析器...');
 
   // 使用测试固件中的 EPUB 文件
-  const epubFile = 'test-fixtures/sample.epub';
+  const epubFile = path.join(__dirname, 'fixtures/sample.epub');
 
   if (!fs.existsSync(epubFile)) {
     console.log('  ⚠️  未找到 EPUB 测试文件,跳过测试');
@@ -138,8 +141,8 @@ async function testTypeExports() {
 
   try {
     // 使用 ESM 动态导入
-    const typesModule = await import('./types');
-    const configModule = await import('./config/defaults');
+    const typesModule = await import('../types');
+    const configModule = await import('../config/defaults');
 
     const { FileFormat, ParseError } = typesModule;
     const { DEFAULTS, LANGUAGES, PRESET_MODELS } = configModule;

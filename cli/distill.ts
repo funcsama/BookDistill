@@ -44,16 +44,16 @@ import {
   pickGitHubFolder,
 } from './prompt';
 import { NodeFileAdapter, NodeDOMParserAdapter } from './adapters/nodeAdapters';
-import { parseEpubFile } from '../services/parsers/epubParser.universal';
-import { parseMarkdownFile } from '../services/parsers/markdownParser.universal';
-import { DEFAULTS, LANGUAGES, SYSTEM_INSTRUCTION_TEMPLATE } from '../config/defaults';
-import { generateBookFilename, generateMarkdownWithFrontmatter } from '../utils/filenameUtils';
+import { parseEpubFile } from '../src/services/parsers/epubParser.universal';
+import { parseMarkdownFile } from '../src/services/parsers/markdownParser.universal';
+import { DEFAULTS, LANGUAGES, SYSTEM_INSTRUCTION_TEMPLATE } from '../src/config/defaults';
+import { generateBookFilename, generateMarkdownWithFrontmatter } from '../src/utils/filenameUtils';
 import {
   validateToken,
   getUserRepos,
   getRepoFolders,
   saveFileToRepo,
-} from '../services/githubService';
+} from '../src/services/githubService';
 
 // ── Arg parsing ───────────────────────────────────────────────────────────────
 

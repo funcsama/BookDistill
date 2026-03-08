@@ -8,8 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "distill": "npx tsx cli/distill.ts",
-    "test": "npx tsx test-parsers.ts",
-    "test:cli": "GEMINI_API_KEY=test npx tsx cli/distill.ts -i test-fixtures/test-book.md 2>&1 | head -3"
+    "test": "npx tsx src/test/parsers.test.ts",
+    "test:cli": "npx tsx cli/distill.ts -i src/test/fixtures/test-book.md --no-interactive 2>&1 | head -3"
   },
   "bin": {
     "book-distill": "./cli/distill.ts"
